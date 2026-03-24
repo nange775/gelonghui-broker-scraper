@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>券商数据查询</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/flatpickr.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/material_green.css') }}">
+
+    <style>
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: #f0f2f5;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container-card {
+            max-width: 900px;
+            width: 100%;
+            background-color: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
+            padding: 40px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 35px;
+            color: #1a1a1a;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+        
+        .search-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            margin-bottom: 35px;
+        }
+        
+        .date-input-group {
+            max-width: 350px;
+        }
+        
+        .date-input-group label {
+            font-weight: 700;
+            color: #444;
+            margin-bottom: 12px;
+            display: block;
+            font-size: 0.95rem;
+        }
+
+        .date-input-group.full-width {
+            max-width: 100%;
+        }
+
+        .date-input-group .input-group-text {
+            background-color: #edf2f7;
+            border: 2px solid #edf2f7;
+            border-right: none;
+            border-radius: 14px 0 0 14px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .date-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .date-picker-box {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .date-picker-box .input-group {
+            border: 2px solid #edf2f7;
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        .date-picker-box .input-group-text {
+            background-color: #edf2f7;
+            border: none;
+            border-right: 1px solid #e2e8f0;
+            font-weight: 600;
+            color: #4a5568;
+            padding: 0 14px;
+        }
+
+        .date-picker-box .form-control {
+            border: none;
+            border-radius: 0;
+            height: 48px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #2d3748;
+        }
+
+        .date-picker-box .form-control:focus {
+            box-shadow: none;
+        }
+
+        #start_date, #end_date {
+            cursor: pointer;
+            background-color: #fff;
+        }
+
+        .date-separator {
+            color: #a0aec0;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .btn {
+            padding: 0 28px;
+            border-radius: 12px;
+            font-weight: 700;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 52px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+        }
+
+        .btn-success { background-color: #48bb78; color: white; }
+        .btn-success:hover { background-color: #38a169; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(72, 187, 120, 0.3); }
+
+        .btn-secondary { background-color: #edf2f7; color: #4a5568; }
+        .btn-secondary:hover { background-color: #e2e8f0; color: #2d3748; }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 25px;
+            background: #f9fffb;
+            border-radius: 16px;
+            border: 2px solid #e6fffa;
+            margin-bottom: 25px;
+        }
+
+        .result-card {
+            display: none;
+            text-align: center;
+            padding: 30px;
+            background: #f0fdf4;
+            border-radius: 16px;
+            border: 2px solid #bbf7d0;
+            margin-bottom: 25px;
+        }
+
+        .result-card.success {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        .result-card.error {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+
+        .result-card h5 {
+            color: #166534;
+            font-weight: 700;
+            margin-bottom: 0;
+        }
+
+        .result-card.error h5 {
+            color: #991b1b;
+        }
+
+        .flatpickr-calendar {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
+            border: none !important;
+            border-radius: 15px !important;
+        }
+
+        .home-link {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #4299e1;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="home-link"></a>
+    <div class="container-card">
+        <h1>券商数据查询</h1>
+        
+        <div class="search-controls">
+            <div class="date-input-group full-width">
+                <label>选择查询日期范围</label>
+                <div class="date-input-wrapper">
+                    <div class="date-picker-box">
+                        <div class="input-group">
+                            <span class="input-group-text">开始</span>
+                            <input type="text" id="start_date" class="form-control" placeholder="点击选择开始日期...">
+                        </div>
+                    </div>
+                    <span class="date-separator">至</span>
+                    <div class="date-picker-box">
+                        <div class="input-group">
+                            <span class="input-group-text">结束</span>
+                            <input type="text" id="end_date" class="form-control" placeholder="点击选择结束日期...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="date-input-group full-width">
+                <label>文件保存路径</label>
+                <div class="input-group" style="border: 2px solid #edf2f7; border-radius: 14px; overflow: hidden;">
+                    <span class="input-group-text" style="background-color: #edf2f7; border: none; border-right: 1px solid #e2e8f0; font-weight: 600; color: #4a5568; padding: 0 14px;">路径</span>
+                    <input type="text" id="file_path" class="form-control" style="border: none; border-radius: 0; height: 48px; font-size: 1rem; font-weight: 500; color: #2d3748;" value="C:\Users\IT\Desktop\券商\券商数据.xlsx" placeholder="请输入文件保存路径...">
+                </div>
+            </div>
+
+            <div class="date-input-group full-width">
+                <label>股票代码</label>
+                <div class="input-group" style="border: 2px solid #edf2f7; border-radius: 14px; overflow: hidden;">
+                    <span class="input-group-text" style="background-color: #edf2f7; border: none; border-right: 1px solid #e2e8f0; font-weight: 600; color: #4a5568; padding: 0 14px;">代码</span>
+                    <input type="text" id="stock_id" class="form-control" style="border: none; border-radius: 0; height: 48px; font-size: 1rem; font-weight: 500; color: #2d3748;" value="6639" placeholder="请输入股票代码...">
+                </div>
+            </div>
+            
+            <div class="button-row">
+                <button type="button" class="btn btn-success" id="submit-btn">开始查询</button>
+                <button type="button" class="btn btn-secondary" id="cancel-btn">取消</button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading-spinner">
+            <div class="spinner-border text-success" role="status"></div>
+            <p class="mt-2 mb-0 fw-bold" style="color: #276749;">数据抓取中，请稍后...</p>
+        </div>
+
+        <div id="alert-container"></div>
+
+        <div class="result-card" id="result-card">
+            <h5 id="result-message"></h5>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/flatpickr.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/zh.js') }}"></script>
+    
+    <script>
+        // 初始化变量
+        const alertBox = document.getElementById('alert-container');
+        const loading = document.getElementById('loading-spinner');
+        const resultCard = document.getElementById('result-card');
+        const resultMessage = document.getElementById('result-message');
+        let controller = null;
+
+        // 初始化日期选择器
+        const fpStart = flatpickr("#start_date", {
+            locale: "zh",
+            dateFormat: "Y-m-d",
+            disableMobile: "true",
+            animate: true
+        });
+
+        const fpEnd = flatpickr("#end_date", {
+            locale: "zh",
+            dateFormat: "Y-m-d",
+            disableMobile: "true",
+            animate: true
+        });
+
+        // 加载设置
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/settings');
+                const settings = await response.json();
+                if (settings.file_path) document.getElementById('file_path').value = settings.file_path;
+                if (settings.stock_id) document.getElementById('stock_id').value = settings.stock_id;
+            } catch (err) {
+                console.error('加载设置失败:', err);
+            }
+        }
+        loadSettings();
+
+        function showMsg(text, type='info') {
+            alertBox.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show border-0 shadow-sm" role="alert">
+                    ${text}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>`;
+        }
+
+        function showResult(success, message) {
+            resultCard.style.display = 'block';
+            resultCard.className = 'result-card ' + (success ? 'success' : 'error');
+            resultMessage.textContent = message;
+        }
+
+        async function startQuery() {
+            const startDate = document.getElementById('start_date').value;
+            const endDate = document.getElementById('end_date').value;
+            const filePath = document.getElementById('file_path').value;
+            const stockId = document.getElementById('stock_id').value;
+
+            if (!startDate || !endDate) {
+                showMsg('请选择开始日期和结束日期', 'warning');
+                return;
+            }
+
+            if (new Date(startDate) > new Date(endDate)) {
+                showMsg('开始日期不能晚于结束日期', 'warning');
+                return;
+            }
+
+            if (!filePath) {
+                showMsg('请输入文件保存路径', 'warning');
+                return;
+            }
+
+            if (controller) controller.abort();
+            controller = new AbortController();
+            
+            loading.style.display = 'block';
+            resultCard.style.display = 'none';
+            showMsg(`正在抓取 ${startDate} 至 ${endDate} 的数据...`, 'primary');
+
+            try {
+                const response = await fetch('/api/broker', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ 
+                        start_date: startDate, 
+                        end_date: endDate,
+                        file_path: filePath,
+                        stock_id: stockId
+                    }),
+                    signal: controller.signal
+                });
+                
+                const result = await response.json();
+                loading.style.display = 'none';
+
+                if (result.success) {
+                    showResult(true, result.message);
+                    showMsg("数据抓取完成！", 'success');
+                    // 保存设置
+                    fetch('/api/settings', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ file_path: filePath, stock_id: stockId })
+                    });
+                } else {
+                    showResult(false, result.message);
+                    showMsg(`错误：${result.message}`, 'danger');
+                }
+            } catch (err) {
+                loading.style.display = 'none';
+                if (err.name === 'AbortError') {
+                    showMsg('查询已取消', 'secondary');
+                } else {
+                    showResult(false, err.message);
+                    showMsg('网络异常: ' + err.message, 'danger');
+                }
+            }
+        }
+
+        document.getElementById('submit-btn').onclick = startQuery;
+
+        document.getElementById('cancel-btn').onclick = () => {
+            if (controller) controller.abort();
+            loading.style.display = 'none';
+            resultCard.style.display = 'none';
+            showMsg('查询已取消', 'secondary');
+        };
+    </script>
+</body>
+</html>
