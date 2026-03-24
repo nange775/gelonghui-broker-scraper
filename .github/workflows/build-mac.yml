@@ -1,0 +1,43 @@
+name: 打包格隆汇工具 (Mac版)
+
+on:
+  push:
+    branches: [ "main" ]  # 当你推送代码到 main 分支时自动触发
+  workflow_dispatch:      # 允许你在网页上手动点“运行”按钮
+
+jobs:
+  build:
+    runs-on: macos-latest # 使用 GitHub 提供的 Mac 虚拟机
+
+    steps:
+    - name: 1. 拉取代码
+      uses: actions/checkout@v4
+
+    - name: 2. 安装 Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: 3. 安装项目依赖
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        # 如果你有 requirements.txt，就安装它
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+    - name: 4. 使用 PyInstaller 打包
+      run: |
+        # -F: 封装成单个文件
+        # --add-data: 包含静态文件夹和配置文件
+        # 注意：Mac 下的分隔符必须是冒号 :
+        pyinstaller -F \
+          --add-data "templates:templates" \
+          --add-data "static:static" \
+          --add-data "settings.json:." \
+          app_broker.py
+
+    - name: 5. 上传成品
+      uses: actions/upload-artifact@v4
+      with:
+        name: Gelonghui-Mac-App  # 你下载时的文件名
+        path: dist/app_broker     # 告诉 GitHub 去哪找打包好的文件
